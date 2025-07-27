@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
+
 import pandas as pd
 
 from src.reports import spending_by_category, spending_by_weekday, spending_by_workday
@@ -25,7 +26,7 @@ def main() -> None:
         # БЛОК 1: ЗАГРУЗКА И ПРОВЕРКА ДАННЫХ
         # =============================================
         transactions_file = DATA_DIR / "operations.xlsx"
-        print(f"\n=== ЗАГРУЗКА ДАННЫХ ===")
+        print("\n=== ЗАГРУЗКА ДАННЫХ ===")
         print(f"Путь к файлу: {transactions_file}")
         print(f"Файл существует: {transactions_file.exists()}")
 
@@ -75,9 +76,6 @@ def main() -> None:
         # =============================================
         # БЛОК 3: ОСНОВНОЙ АНАЛИЗ
         # =============================================
-        start_date = pd.to_datetime("01.01.2018", dayfirst=True)  # Начальная дата
-        end_date = pd.to_datetime("31.12.2021", dayfirst=True)  # Конечная дата
-
         # Пример вызова одной функции для проверки
         test_category = "Супермаркеты"
         if test_category in transactions['Категория'].unique():
@@ -124,10 +122,9 @@ def main() -> None:
         print("\nSpending by Workday/Weekend:")
         print(workday_spending)
 
-
     except Exception as e:
-
         logger.error("Ошибка в main: %s", str(e), exc_info=True)
 
+
 if __name__ == "__main__":
-        main()
+    main()
