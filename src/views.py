@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
@@ -98,7 +98,6 @@ def home_page(date_str: str) -> Dict[str, Any]:
 def events_page(transactions: pd.DataFrame, date_str: str, date_range: str = "M") -> Dict[str, Any]:
     """Генерирует данные для страницы событий."""
     try:
-        date = datetime.strptime(date_str, "%Y-%m-%d")
 
         if date_range == "ALL":
             start_date = pd.to_datetime("2018-01-01")  # Фиксированная начальная дата
@@ -107,7 +106,7 @@ def events_page(transactions: pd.DataFrame, date_str: str, date_range: str = "M"
             # Для других режимов используем последний год данных
             start_date = pd.to_datetime("2021-01-01") if date_range == "Y" else \
                 pd.to_datetime("2021-12-01") if date_range == "M" else \
-                    pd.to_datetime("2021-12-25")  # Пример для недели
+                pd.to_datetime("2021-12-25")  # Пример для недели
             end_date = pd.to_datetime("2021-12-31")
 
         filtered = transactions[
