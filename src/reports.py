@@ -14,7 +14,10 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
-def report_to_file(filename: Optional[str] = None) -> Callable[[Callable[..., T]], Callable[..., T]]:
+def report_to_file(
+    filename: Optional[str] = None,
+    reports_dir: Optional[Path] = None
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """Декоратор для сохранения результатов отчета в файл."""
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
@@ -25,18 +28,17 @@ def report_to_file(filename: Optional[str] = None) -> Callable[[Callable[..., T]
             # Создаем имя файла
             report_name = filename or f"report_{func.__name__}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
 
-            # Создаем директорию reports если ее нет
-            reports_dir = Path(__file__).parent.parent / "reports"
-            reports_dir.mkdir(exist_ok=True)
+            # Используем переданную директорию или дефолтную
+            dir_path = reports_dir or (Path(__file__).parent.parent / "reports")
+            dir_path.mkdir(exist_ok=True)
 
             # Полный путь к файлу
-            report_path = reports_dir / report_name
+            report_path = dir_path / report_name
 
             # Сохраняем результат
             try:
                 with open(report_path, "w", encoding="utf-8") as f:
                     if isinstance(result, pd.DataFrame):
-                        # Преобразуем даты в строки перед сохранением
                         df = result.copy()
                         if "Дата операции" in df.columns:
                             df["Дата операции"] = df["Дата операции"].astype(str)
