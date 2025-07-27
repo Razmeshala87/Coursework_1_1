@@ -1,16 +1,16 @@
-import pytest
-from unittest.mock import patch, mock_open
 import json
-from datetime import datetime
+from typing import Dict, List
+from unittest.mock import mock_open, patch
+
 import pandas as pd
-import logging
+import pytest
 
 # Импортируем тестируемые функции
-from src.views import home_page, events_page
+from src.views import events_page, home_page
 
 
 @pytest.fixture
-def mock_settings():
+def mock_settings() -> Dict[str, List[str]]:
     return {
         "user_currencies": ["USD", "EUR"],
         "user_stocks": ["AAPL", "GOOGL"]
@@ -18,7 +18,7 @@ def mock_settings():
 
 
 @pytest.fixture
-def mock_transactions():
+def mock_transactions() -> pd.DataFrame:
     data = {
         "Дата операции": pd.to_datetime(["2021-01-01", "2021-01-02", "2021-01-03", "2021-01-04"]),
         "Номер карты": ["1234567890123456", "1234567890123456", "9876543210987654", None],
@@ -31,7 +31,7 @@ def mock_transactions():
 
 
 @pytest.fixture
-def mock_empty_transactions():
+def mock_empty_transactions() -> pd.DataFrame:
     return pd.DataFrame(columns=[
         "Дата операции", "Номер карты", "Сумма операции",
         "Кэшбэк", "Категория", "Описание"
@@ -39,16 +39,21 @@ def mock_empty_transactions():
 
 
 @pytest.fixture
-def mock_currency_rates():
+def mock_currency_rates() -> Dict[str, float]:
     return {"USD": 75.50, "EUR": 85.25}
 
 
 @pytest.fixture
-def mock_stock_prices():
+def mock_stock_prices() -> Dict[str, float]:
     return {"AAPL": 150.25, "GOOGL": 2750.50}
 
 
-def test_home_page_success(mock_settings, mock_transactions, mock_currency_rates, mock_stock_prices):
+def test_home_page_success(
+    mock_settings: Dict[str, List[str]],
+    mock_transactions: pd.DataFrame,
+    mock_currency_rates: Dict[str, float],
+    mock_stock_prices: Dict[str, float]
+) -> None:
     """Тест успешного выполнения home_page"""
     date_str = "2021-01-01 12:00:00"
 
@@ -81,7 +86,12 @@ def test_home_page_success(mock_settings, mock_transactions, mock_currency_rates
         assert result["stock_prices"] == mock_stock_prices
 
 
-def test_events_page_all_range(mock_settings, mock_transactions, mock_currency_rates, mock_stock_prices):
+def test_events_page_all_range(
+    mock_settings: Dict[str, List[str]],
+    mock_transactions: pd.DataFrame,
+    mock_currency_rates: Dict[str, float],
+    mock_stock_prices: Dict[str, float]
+) -> None:
     """Тест events_page с диапазоном ALL"""
     date_str = "2021-01-01 12:00:00"
 
@@ -104,10 +114,12 @@ def test_events_page_all_range(mock_settings, mock_transactions, mock_currency_r
         assert result["income"]["total_amount"] == round(expected_income)
 
 
-# Остальные тесты остаются без изменений
-
-
-def test_events_page_empty_transactions(mock_settings, mock_empty_transactions, mock_currency_rates, mock_stock_prices):
+def test_events_page_empty_transactions(
+    mock_settings: Dict[str, List[str]],
+    mock_empty_transactions: pd.DataFrame,
+    mock_currency_rates: Dict[str, float],
+    mock_stock_prices: Dict[str, float]
+) -> None:
     """Тест events_page с пустыми транзакциями"""
     date_str = "2021-01-01 12:00:00"
 
@@ -122,7 +134,10 @@ def test_events_page_empty_transactions(mock_settings, mock_empty_transactions, 
         assert result["income"]["main"] == []
 
 
-def test_events_page_invalid_date_range(mock_settings, mock_transactions):
+def test_events_page_invalid_date_range(
+    mock_settings: Dict[str, List[str]],
+    mock_transactions: pd.DataFrame
+) -> None:
     """Тест events_page с неверным диапазоном дат"""
     date_str = "2021-01-01 12:00:00"
 
@@ -136,7 +151,10 @@ def test_events_page_invalid_date_range(mock_settings, mock_transactions):
         assert "income" in result
 
 
-def test_events_page_logging_error(mock_settings, mock_transactions):
+def test_events_page_logging_error(
+    mock_settings: Dict[str, List[str]],
+    mock_transactions: pd.DataFrame
+) -> None:
     """Тест обработки ошибок в events_page"""
     date_str = "2021-01-01 12:00:00"
 
@@ -150,7 +168,9 @@ def test_events_page_logging_error(mock_settings, mock_transactions):
         assert mock_logger.called
 
 
-def test_home_page_logging_error(mock_settings):
+def test_home_page_logging_error(
+    mock_settings: Dict[str, List[str]]
+) -> None:
     """Тест обработки ошибок в home_page"""
     date_str = "2021-01-01 12:00:00"
 
