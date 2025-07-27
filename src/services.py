@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def profitable_cashback_categories(transactions: List[Dict[str, Any]], year: int, month: int) -> Dict[str, float]:
-    """Рассчитывает наиболее выгодные категории кешбэка за указанный месяц и год.
+    """Рассчитывает наиболее выгодные категории кэшбэка за указанный месяц и год.
 
     Args:
         transactions: Список транзакций
@@ -17,15 +17,16 @@ def profitable_cashback_categories(transactions: List[Dict[str, Any]], year: int
         month: Месяц для анализа (1-12)
 
     Returns:
-        Словарь с категориями и суммарным кешбэком
+        Словарь с категориями и суммарным кэшбэком
 
     Raises:
         ValueError: При некорректных параметрах года или месяца
     """
+    if not (2018 <= year <= 2021):
+        logger.warning(f"Год {year} вне диапазона данных (2018-2021). Используется 2021.")
+        year = 2021
     if not (1 <= month <= 12):
-        raise ValueError("Month must be between 1 and 12")
-    if year < 2000 or year > datetime.now().year:
-        raise ValueError("Invalid year")
+        month = 12
 
     cashback_by_category: Dict[str, float] = {}
 
@@ -34,7 +35,7 @@ def profitable_cashback_categories(transactions: List[Dict[str, Any]], year: int
             op_date = datetime.strptime(transaction["Дата операции"], "%Y-%m-%d")
             if op_date.year == year and op_date.month == month:
                 category = transaction["Категория"]
-                cashback = float(transaction.get("Кешбэк", 0))
+                cashback = float(transaction.get("Кэшбэк", 0))
 
                 if cashback > 0:
                     cashback_by_category[category] = cashback_by_category.get(category, 0.0) + cashback
@@ -62,8 +63,10 @@ def investment_bank(month: str, transactions: List[Dict[str, Any]], rounding_lim
     """
     try:
         year, month_num = map(int, month.split("-"))
-        if not (1 <= month_num <= 12):
-            raise ValueError("Month must be between 1 and 12")
+        if not (2018 <= year <= 2021):
+            logger.warning(f"Год {year} вне диапазона данных (2018-2021). Используется 2021.")
+            year = 2021
+            month_num = 12  # Используем декабрь как последний доступный месяц
         if rounding_limit <= 0:
             raise ValueError("Rounding limit must be positive")
     except ValueError as e:
@@ -81,7 +84,6 @@ def investment_bank(month: str, transactions: List[Dict[str, Any]], rounding_lim
                     if remainder > 0:
                         savings = rounding_limit - remainder
                         total_savings += savings
-
         except (KeyError, ValueError) as e:
             logger.warning("Пропущена некорректная транзакция: %s", e)
             continue

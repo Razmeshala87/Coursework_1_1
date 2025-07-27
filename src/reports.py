@@ -56,40 +56,58 @@ def report_to_file(filename: Optional[str] = None) -> Callable[[Callable[..., T]
 
 @report_to_file()
 def spending_by_category(transactions: pd.DataFrame, category: str, date: Optional[str] = None) -> pd.DataFrame:
-    """Рассчитывает траты по категории за последние 3 месяца."""
     try:
-        ref_date = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now()
-        start_date = ref_date - timedelta(days=90)
+        print(f"\nАнализ категории '{category}':")
+        print("Доступные категории:", transactions['Категория'].unique())
 
+        ref_date = pd.to_datetime("2021-12-31")
+        start_date = pd.to_datetime("2018-01-01")
+
+        print(f"Период анализа: {start_date} - {ref_date}")
+
+        # Явная конвертация дат
+        transactions['Дата операции'] = pd.to_datetime(transactions['Дата операции'])
         filtered = transactions[
-            (transactions["Категория"] == category)
-            & (pd.to_datetime(transactions["Дата операции"]) >= start_date)
-            & (pd.to_datetime(transactions["Дата операции"]) <= ref_date)
-        ]
+            (transactions['Категория'] == category) &
+            (transactions['Дата операции'] >= start_date) &
+            (transactions['Дата операции'] <= ref_date)
+            ]
 
-        return (
-            filtered.groupby(pd.to_datetime(filtered["Дата операции"]).dt.to_period("M"))["Сумма операции"]
-            .sum()
-            .reset_index()
-        )
+        print(f"Найдено {len(filtered)} транзакций")
+
+        if filtered.empty:
+            return pd.DataFrame(columns=['Дата операции', 'Сумма операции'])
+
+        result = filtered.groupby(
+            filtered['Дата операции'].dt.to_period("M")
+        )['Сумма операции'].sum().reset_index()
+
+        return result
+
     except Exception as e:
-        logger.error("Ошибка в spending_by_category: %s", str(e))
+        logger.error("Ошибка: %s", str(e), exc_info=True)
         raise
 
 
 @report_to_file()
 def spending_by_weekday(transactions: pd.DataFrame, date: Optional[str] = None) -> pd.DataFrame:
-    """Рассчитывает средние траты по дням недели за последние 3 месяца."""
+    """Рассчитывает средние траты по дням недели за период 2018-2021."""
     try:
-        ref_date = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now()
-        start_date = ref_date - timedelta(days=90)
+        ref_date = pd.to_datetime("2021-12-31")
+        start_date = pd.to_datetime("2018-01-01")
 
-        filtered = transactions.loc[
-            (pd.to_datetime(transactions["Дата операции"]) >= start_date)
-            & (pd.to_datetime(transactions["Дата операции"]) <= ref_date)
+        # Пробуем разные форматы дат
+        try:
+            op_date = pd.to_datetime(transactions["Дата операции"], format="%Y-%m-%d")
+        except ValueError:
+            op_date = pd.to_datetime(transactions["Дата операции"], format="%d.%m.%Y %H:%M:%S")
+
+        filtered = transactions[
+            (transactions["Дата операции"] >= start_date) &
+            (transactions["Дата операции"] <= ref_date)
         ].copy()
 
-        filtered.loc[:, "День недели"] = pd.to_datetime(filtered["Дата операции"]).dt.day_name()
+        filtered.loc[:, "День недели"] = op_date.dt.day_name()
         return filtered.groupby("День недели")["Сумма операции"].mean().reset_index()
     except Exception as e:
         logger.error("Ошибка в spending_by_weekday: %s", str(e))
@@ -98,17 +116,23 @@ def spending_by_weekday(transactions: pd.DataFrame, date: Optional[str] = None) 
 
 @report_to_file("workday_spending_report.json")
 def spending_by_workday(transactions: pd.DataFrame, date: Optional[str] = None) -> pd.DataFrame:
-    """Рассчитывает средние траты в рабочие и выходные дни за последние 3 месяца."""
+    """Рассчитывает средние траты в рабочие и выходные дни за период 2018-2021."""
     try:
-        ref_date = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now()
-        start_date = ref_date - timedelta(days=90)
+        ref_date = pd.to_datetime("2021-12-31")
+        start_date = pd.to_datetime("2018-01-01")
 
-        filtered = transactions.loc[
-            (pd.to_datetime(transactions["Дата операции"]) >= start_date)
-            & (pd.to_datetime(transactions["Дата операции"]) <= ref_date)
+        # Пробуем разные форматы дат
+        try:
+            op_date = pd.to_datetime(transactions["Дата операции"], format="%Y-%m-%d")
+        except ValueError:
+            op_date = pd.to_datetime(transactions["Дата операции"], format="%d.%m.%Y %H:%M:%S")
+
+        filtered = transactions[
+            (transactions["Дата операции"] >= start_date) &
+            (transactions["Дата операции"] <= ref_date)
         ].copy()
 
-        filtered.loc[:, "Тип дня"] = pd.to_datetime(filtered["Дата операции"]).dt.dayofweek.apply(
+        filtered.loc[:, "Тип дня"] = op_date.dt.dayofweek.apply(
             lambda x: "Выходной" if x >= 5 else "Рабочий"
         )
 

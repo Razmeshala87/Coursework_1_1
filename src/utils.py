@@ -28,15 +28,28 @@ def load_transactions(file_path: str | Path) -> pd.DataFrame:
     """Загружает транзакции из Excel-файла."""
     try:
         path = Path(file_path).resolve()
-
-        if os.getenv("TESTING") != "True" and not path.exists():
+        if not path.exists():
             raise FileNotFoundError(f"Файл {path} не найден")
 
-        df = pd.read_excel(path)
-        logger.info("Успешно загружены транзакции из %s", path)
-        return df
+        # Читаем как объекты, затем конвертируем даты
+        df = pd.read_excel(path, dtype={'Дата операции': str})
+        df['Дата операции'] = pd.to_datetime(
+            df['Дата операции'],
+            format='%d.%m.%Y %H:%M:%S',
+            errors='coerce'
+        ).dt.strftime('%Y-%m-%d')
+
+        # Проверяем обязательные колонки
+        required = {"Дата операции", "Категория", "Сумма операции"}
+        if not required.issubset(df.columns):
+            missing = required - set(df.columns)
+            raise ValueError(f"Отсутствуют колонки: {missing}")
+
+        logger.info(f"Загружено {len(df)} транзакций, пример:\n{df.head(2)}")
+        return df.dropna(subset=['Дата операции'])
+
     except Exception as e:
-        logger.error("Ошибка загрузки транзакций: %s", str(e))
+        logger.error("Ошибка загрузки: %s", str(e), exc_info=True)
         raise
 
 
