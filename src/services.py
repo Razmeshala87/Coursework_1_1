@@ -66,7 +66,8 @@ def investment_bank(month: str, transactions: List[Dict[str, Any]], rounding_lim
         if not (2018 <= year <= 2021):
             logger.warning(f"Год {year} вне диапазона данных (2018-2021). Используется 2021.")
             year = 2021
-            month_num = 12  # Используем декабрь как последний доступный месяц
+        if not (1 <= month_num <= 12):
+            raise ValueError("Номер месяца должен быть от 1 до 12")
         if rounding_limit <= 0:
             raise ValueError("Rounding limit must be positive")
     except ValueError as e:
