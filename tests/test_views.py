@@ -103,4 +103,61 @@ def test_events_page_all_range(mock_settings, mock_transactions, mock_currency_r
         expected_income = 500.00
         assert result["income"]["total_amount"] == round(expected_income)
 
+
 # Остальные тесты остаются без изменений
+
+
+def test_events_page_empty_transactions(mock_settings, mock_empty_transactions, mock_currency_rates, mock_stock_prices):
+    """Тест events_page с пустыми транзакциями"""
+    date_str = "2021-01-01 12:00:00"
+
+    with patch("builtins.open", mock_open(read_data=json.dumps(mock_settings))), \
+            patch("src.views.get_currency_rates", return_value=mock_currency_rates), \
+            patch("src.views.get_stock_prices", return_value=mock_stock_prices):
+        result = events_page(mock_empty_transactions, date_str)
+
+        assert result["expenses"]["total_amount"] == 0
+        assert result["expenses"]["main"] == []
+        assert result["income"]["total_amount"] == 0
+        assert result["income"]["main"] == []
+
+
+def test_events_page_invalid_date_range(mock_settings, mock_transactions):
+    """Тест events_page с неверным диапазоном дат"""
+    date_str = "2021-01-01 12:00:00"
+
+    with patch("builtins.open", mock_open(read_data=json.dumps(mock_settings))), \
+            patch("src.views.get_currency_rates", return_value={}), \
+            patch("src.views.get_stock_prices", return_value={}):
+        result = events_page(mock_transactions, date_str, "INVALID")
+
+        # Проверяем, что данные все равно возвращаются
+        assert "expenses" in result
+        assert "income" in result
+
+
+def test_events_page_logging_error(mock_settings, mock_transactions):
+    """Тест обработки ошибок в events_page"""
+    date_str = "2021-01-01 12:00:00"
+
+    with patch("builtins.open", mock_open(read_data=json.dumps(mock_settings))), \
+            patch("src.views.get_currency_rates", side_effect=Exception("Test error")), \
+            patch("logging.Logger.error") as mock_logger:
+        with pytest.raises(Exception):
+            events_page(mock_transactions, date_str)
+
+        # Проверяем, что ошибка была залогирована
+        assert mock_logger.called
+
+
+def test_home_page_logging_error(mock_settings):
+    """Тест обработки ошибок в home_page"""
+    date_str = "2021-01-01 12:00:00"
+
+    with patch("builtins.open", side_effect=Exception("Test error")), \
+            patch("logging.Logger.error") as mock_logger:
+        with pytest.raises(Exception):
+            home_page(date_str)
+
+        # Проверяем, что ошибка была залогирована
+        assert mock_logger.called
